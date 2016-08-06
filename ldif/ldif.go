@@ -187,10 +187,128 @@ func (l *LDIF) parseEntry(lines []string) (entry *Entry, err error) {
 			lines = lines[1:]
 		}
 	}
-	if l.changeType != "" {
-		return nil, errors.New("change records not supported")
-	}
+	switch l.changeType {
+	case "":
+		attrs, err := l.parseAttrs(lines)
+		if err != nil {
+			return nil, err
+		}
+		return &Entry{Entry: ldap.NewEntry(dn, attrs)}, nil
 
+	case "add":
+		attrs, err := l.parseAttrs(lines)
+		if err != nil {
+			return nil, err
+		}
+		add := ldap.NewAddRequest(dn)
+		for attr, vals := range attrs {
+			add.Attribute(attr, vals)
+		}
+		return &Entry{Add: add}, nil
+
+	case "delete":
+		if len(lines) > 0 {
+			return nil, errors.New("no attributes allowed for changetype delete")
+		}
+		return &Entry{Del: ldap.NewDelRequest(dn, nil)}, nil
+
+	case "modify":
+		mod := ldap.NewModifyRequest(dn)
+		var op, attribute string
+		var values []string
+		if lines[len(lines)-1] != "-" {
+			return nil, errors.New("modify request does not close with a single dash")
+		}
+
+		for i := 0; i < len(lines); i++ {
+			if lines[i] == "-" {
+				switch op {
+				case "":
+					return nil, fmt.Errorf("empty operation")
+				case "add":
+					mod.Add(attribute, values)
+				case "replace":
+					mod.Replace(attribute, values)
+				case "delete":
+					mod.Delete(attribute, values)
+				default:
+					return nil, fmt.Errorf("invalid operation %s in modify request", op)
+				}
+			}
+			attr, val, err := l.parseLine(lines[i])
+			if err != nil {
+				return nil, err
+			}
+			if op == "" {
+				op = attr
+				attribute = val
+			} else {
+				if attr != attribute {
+					return nil, fmt.Errorf("invalid attribute %s in %s request for %s", attr, op, attribute)
+				}
+			}
+		}
+		return &Entry{Modify: mod}, nil
+
+	case "moddn", "modrdn":
+		return nil, fmt.Errorf("unsupported changetype %s", l.changeType)
+		/*
+		   attrs, err := l.parseAttrs(lines)
+		   var newRDN, newSuperior string
+		   if err != nil{
+		       return nil, err
+		   }
+		   num := 0
+		   delOld := false
+		   d, ok := attrs["deleteoldrdn"]
+		   if ok {
+		       num++
+		       if len(d) != 1 {
+		           return nil, errors.New("too many deleteoldrdn attrs")
+		       }
+		       switch d[0] {
+		       case "1":
+		           delOld = true
+		       case "0":
+		           delOld = false
+		       default:
+		           return nil, errors.New("invalid value for deleteoldrdn attribute")
+		       }
+		   }
+		   rdn, ok := attrs["newrdn"]
+		   if ok  {
+		       if len(rdn) != 1 {
+		           return nil, errors.New("too many newrdn attrs")
+		       }
+		       newRDN = rdn[0]
+		       num++
+		   }
+		   newSup, ok := attrs["newsuperior"]
+		   if ok {
+		       if len(newSup) != 1 {
+		           return nil, errors.New("too many newsuperior attrs")
+		       }
+		       newSuperior = newSup[0]
+		       num++
+		   }
+		   if len(attrs) > num {
+		       return nil, fmt.Errorf("extra attributes for %s", l.changeType)
+		   }
+		   return &Entry{
+		       ModifyDN: &ldap.ModifyDNRequest{
+		           DN: dn,
+		           NewRDN: newRDN,
+		           DeleteOldRDN: delOld,
+		           NewSuperior: newSuperior,
+		       },
+		   }, nil
+		*/
+	default:
+		return nil, fmt.Errorf("invalid changetype %s", l.changeType)
+	}
+}
+
+func (l *LDIF) parseAttrs(lines []string) (map[string][]string, error) {
 	attrs := make(map[string][]string)
 	for i := 0; i < len(lines); i++ {
 		attr, val, err := l.parseLine(lines[i])
@@ -199,9 +317,7 @@ func (l *LDIF) parseEntry(lines []string) (entry *Entry, err error) {
 		}
 		attrs[attr] = append(attrs[attr], val)
 	}
-	return &Entry{
-		Entry: ldap.NewEntry(dn, attrs),
-	}, nil
+	return attrs, nil
 }
 
 func (l *LDIF) parseLine(line string) (attr, val string, err error) {
