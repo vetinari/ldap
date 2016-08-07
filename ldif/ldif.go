@@ -215,7 +215,7 @@ func (l *LDIF) parseEntry(lines []string) (entry *Entry, err error) {
 		return &Entry{Add: add}, nil
 
 	case "delete":
-		if len(lines) > 0 {
+		if len(lines) > 1 {
 			return nil, errors.New("no attributes allowed for changetype delete")
 		}
 		return &Entry{Del: ldap.NewDelRequest(dn, nil)}, nil
@@ -235,13 +235,17 @@ func (l *LDIF) parseEntry(lines []string) (entry *Entry, err error) {
 					return nil, fmt.Errorf("empty operation")
 				case "add":
 					mod.Add(attribute, values)
+					op = ""
 				case "replace":
 					mod.Replace(attribute, values)
+					op = ""
 				case "delete":
 					mod.Delete(attribute, values)
+					op = ""
 				default:
 					return nil, fmt.Errorf("invalid operation %s in modify request", op)
 				}
+				continue
 			}
 			attr, val, err := l.parseLine(lines[i])
 			if err != nil {
@@ -261,55 +265,59 @@ func (l *LDIF) parseEntry(lines []string) (entry *Entry, err error) {
 	case "moddn", "modrdn":
 		return nil, fmt.Errorf("unsupported changetype %s", l.changeType)
 		/*
-		   attrs, err := l.parseAttrs(lines)
-		   var newRDN, newSuperior string
-		   if err != nil{
-		       return nil, err
-		   }
-		   num := 0
-		   delOld := false
-		   d, ok := attrs["deleteoldrdn"]
-		   if ok {
-		       num++
-		       if len(d) != 1 {
-		           return nil, errors.New("too many deleteoldrdn attrs")
-		       }
-		       switch d[0] {
-		       case "1":
-		           delOld = true
-		       case "0":
-		           delOld = false
-		       default:
-		           return nil, errors.New("invalid value for deleteoldrdn attribute")
-		       }
-		   }
-		   rdn, ok := attrs["newrdn"]
-		   if ok  {
-		       if len(rdn) != 1 {
-		           return nil, errors.New("too many newrdn attrs")
-		       }
-		       newRDN = rdn[0]
-		       num++
-		   }
-		   newSup, ok := attrs["newsuperior"]
-		   if ok {
-		       if len(newSup) != 1 {
-		           return nil, errors.New("too many newsuperior attrs")
-		       }
-		       newSuperior = newSup[0]
-		       num++
-		   }
-		   if len(attrs) > num {
-		       return nil, fmt.Errorf("extra attributes for %s", l.changeType)
-		   }
-		   return &Entry{
-		       ModifyDN: &ldap.ModifyDNRequest{
-		           DN: dn,
-		           NewRDN: newRDN,
-		           DeleteOldRDN: delOld,
-		           NewSuperior: newSuperior,
-		       },
-		   }, nil
+			// the RFC specifies an order of the values:
+			//   change-moddn             = ("modrdn" / "moddn") SEP
+			//                                 "newrdn:" (    FILL rdn /
+			//                                            ":" FILL base64-rdn) SEP
+			//                                 "deleteoldrdn:" FILL ("0" / "1")  SEP
+			//                                 0*1("newsuperior:"
+			//                                 (    FILL distinguishedName /
+			//                                  ":" FILL base64-distinguishedName) SEP)
+			if len(lines) < 2 || len(lines) > 3 {
+				return nil, fmt.Errorf("invalid number of attributes for %s", l.changeType)
+			}
+			attr, val, err := l.parseLine(lines[0])
+			if err != nil {
+				return nil, err
+			}
+			if attr != "newrdn" {
+				return nil, errors.New("not a newrdn line")
+			}
+			newRDN := val[0]
+
+			attr, val, err = l.parseLine(lines[1])
+			if err != nil {
+				return nil, err
+			}
+			if attr != "deleteoldrdn" {
+				return nil, errors.New("not a deleteoldrdn line")
+			}
+			delOld := false
+			switch val[0] {
+			case "1":
+				delOld = true
+			case "0":
+				delOld = false
+			default:
+				return nil, errors.New("invalid value for deleteoldrdn attribute")
+			}
+
+			newSuperior := ""
+			if len(lines) == 3 {
+				attr, val, err = l.parseLine(lines[2])
+				if attr != "newsuperior" {
+					return nil, errors.New("not a newsuperior line")
+				}
+				newSuperior = val[0]
+			}
+			return &Entry{
+				ModifyDN: &ldap.ModifyDNRequest{
+					DN:           dn,
+					NewRDN:       newRDN,
+					DeleteOldRDN: delOld,
+					NewSuperior:  newSuperior,
+				},
+			}, nil
 		*/
 	default:
 		return nil, fmt.Errorf("invalid changetype %s", l.changeType)
@@ -333,12 +341,12 @@ func (l *LDIF) parseLine(line string) (attr, val string, err error) {
 	for len(line) > off && line[off] != ':' {
 		off++
 		if off >= len(line) {
-			err = errors.New("Missing : in line")
+			err = fmt.Errorf("Missing : in line `%s`", line)
 			return
 		}
 	}
 	if off == len(line) {
-		err = errors.New("Missing : in line")
+		err = fmt.Errorf("Missing : in the line `%s`", line)
 		return
 	}
 
