@@ -128,8 +128,9 @@ type Entry struct {
 
 // GetAttributeValues returns the values for the named attribute, or an empty list
 func (e *Entry) GetAttributeValues(attribute string) []string {
+	attribute = strings.ToLower(attribute)
 	for _, attr := range e.Attributes {
-		if attr.Name == attribute {
+		if strings.ToLower(attr.Name) == attribute {
 			return attr.Values
 		}
 	}
@@ -138,8 +139,9 @@ func (e *Entry) GetAttributeValues(attribute string) []string {
 
 // GetRawAttributeValues returns the byte values for the named attribute, or an empty list
 func (e *Entry) GetRawAttributeValues(attribute string) [][]byte {
+	attribute = strings.ToLower(attribute)
 	for _, attr := range e.Attributes {
-		if attr.Name == attribute {
+		if strings.ToLower(attr.Name) == attribute {
 			return attr.ByteValues
 		}
 	}
