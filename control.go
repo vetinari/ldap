@@ -2,6 +2,7 @@ package ldap
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 
 	"gopkg.in/asn1-ber.v1"
@@ -331,7 +332,11 @@ func DecodeControl(packet *ber.Packet) Control {
 			if child.Tag == 0 {
 				//Warning
 				warningPacket := child.Children[0]
-				packet := ber.DecodePacket(warningPacket.Data.Bytes())
+				packet, err := ber.DecodePacketErr(warningPacket.Data.Bytes())
+				if err != nil {
+					log.Printf("failed to read packet from control data: %s", err)
+					continue
+				}
 				val, ok := packet.Value.(int64)
 				if ok {
 					if warningPacket.Tag == 0 {
