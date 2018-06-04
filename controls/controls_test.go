@@ -28,6 +28,15 @@ func TestControlBehera(t *testing.T) {
 	runControlTest(t, &BeheraPasswordPolicy{Expire: -1, Grace: -1, Error: 4})
 }
 
+func TestControlProxiedAuthz(t *testing.T) {
+	runControlTest(t, &ProxiedAuthorization{Critical: true, AuthzID: "uid=someone,dc=example,dc=org"})
+}
+
+func TestControlVChuPassword(t *testing.T) {
+	runControlTest(t, VChuPasswordMustChange(true))
+	runControlTest(t, VChuPasswordWarning(123345))
+}
+
 func runControlTest(t *testing.T, originalControl Control) {
 	header := ""
 	if callerpc, _, line, ok := runtime.Caller(1); ok {

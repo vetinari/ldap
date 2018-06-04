@@ -28,9 +28,12 @@ type controlRegister struct {
 
 var registeredControls = &controlRegister{
 	Decoders: map[string]Decoder{
-		ControlOIDManageDsaIT:          decodeManageDsaIT,
-		ControlOIDPaging:               decodePaging,
-		ControlOIDBeheraPasswordPolicy: decodeBehera,
+		ControlOIDManageDsaIT:            decodeManageDsaIT,
+		ControlOIDPaging:                 decodePaging,
+		ControlOIDBeheraPasswordPolicy:   decodeBehera,
+		ControlOIDProxiedAuthorization:   decodeProxiedAuthorization,
+		ControlOIDVChuPasswordMustChange: decodeVChuPassword,
+		ControlOIDVChuPasswordWarning:    decodeVChuPassword,
 	},
 }
 

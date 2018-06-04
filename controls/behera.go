@@ -56,6 +56,22 @@ func (c *BeheraPasswordPolicy) Name() string {
 	return "Password Policy - Behera Draft"
 }
 
+// Encode() encodes the BeheraPasswordPolicy control.
+//
+//       PasswordPolicyResponseValue ::= SEQUENCE {
+//         warning [0] CHOICE {
+//            timeBeforeExpiration [0] INTEGER (0 .. maxInt),
+//            graceAuthNsRemaining [1] INTEGER (0 .. maxInt) } OPTIONAL,
+//         error   [1] ENUMERATED {
+//            passwordExpired             (0),
+//            accountLocked               (1),
+//            changeAfterReset            (2),
+//            passwordModNotAllowed       (3),
+//            mustSupplyOldPassword       (4),
+//            insufficientPasswordQuality (5),
+//            passwordTooShort            (6),
+//            passwordTooYoung            (7),
+//            passwordInHistory           (8) } OPTIONAL }
 func (c *BeheraPasswordPolicy) Encode() *ber.Packet {
 	if c.Grace < 0 && c.Expire < 0 && c.Error < 0 {
 		return Encode(c, nil)
