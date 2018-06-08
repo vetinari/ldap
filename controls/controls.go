@@ -34,6 +34,8 @@ var registeredControls = &controlRegister{
 		ControlOIDProxiedAuthorization:   decodeProxiedAuthorization,
 		ControlOIDVChuPasswordMustChange: decodeVChuPassword,
 		ControlOIDVChuPasswordWarning:    decodeVChuPassword,
+		ControlOIDPreRead:                decodePrePostRead,
+		ControlOIDPostRead:               decodePrePostRead,
 	},
 }
 

@@ -37,6 +37,21 @@ func TestControlVChuPassword(t *testing.T) {
 	runControlTest(t, VChuPasswordWarning(123345))
 }
 
+func TestControlPrePostRead(t *testing.T) {
+	runControlTest(t, NewPreReadRequest(false, []string{"cn", "uid"}))
+	runControlTest(t, NewPostReadRequest(false, []string{"cn", "uid"}))
+
+	runControlTest(t, NewPreReadResult(false, "uid=someone,dc=example,dc=org", map[string][]string{
+		"cn":  {"Some User"},
+		"uid": {"someone"},
+	}))
+	runControlTest(t, NewPostReadResult(false, "uid=someone,dc=example,dc=org", map[string][]string{
+		"cn":  {"Some User"},
+		"uid": {"someone"},
+	}))
+
+}
+
 func runControlTest(t *testing.T, originalControl Control) {
 	header := ""
 	if callerpc, _, line, ok := runtime.Caller(1); ok {
