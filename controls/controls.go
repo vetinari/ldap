@@ -123,14 +123,6 @@ func (u *UnknownControl) Encode() *ber.Packet {
 	return nil
 }
 
-// Describe is part of the Control interface
-func (u *UnknownControl) Describe(_ string, val *ber.Packet) error {
-	if val != nil {
-		val.Description = "Control Value of unknown control"
-	}
-	return nil
-}
-
 // Encode encodes the Control to a BER packet suitable to be added to a response.
 // The val argument is the already BER encoded control value
 func Encode(c Control, val *ber.Packet) *ber.Packet {
