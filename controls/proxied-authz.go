@@ -38,6 +38,7 @@ func (c *ProxiedAuthorization) Criticality() bool {
 }
 
 func decodeProxiedAuthorization(_ string, criticality bool, pkt *ber.Packet) (Control, error) {
+	val.Description = "AuthzID"
 	return &ProxiedAuthorization{
 		Critical: criticality,
 		AuthzID:  ber.DecodeString(pkt.Data.Bytes()),

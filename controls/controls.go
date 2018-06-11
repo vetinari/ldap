@@ -123,6 +123,14 @@ func (u *UnknownControl) Encode() *ber.Packet {
 	return nil
 }
 
+// Describe is part of the Control interface
+func (u *UnknownControl) Describe(_ string, val *ber.Packet) error {
+	if val != nil {
+		val.Description = "Control Value of unknown control"
+	}
+	return nil
+}
+
 // Encode encodes the Control to a BER packet suitable to be added to a response.
 // The val argument is the already BER encoded control value
 func Encode(c Control, val *ber.Packet) *ber.Packet {
@@ -173,12 +181,16 @@ func Decode(pkt *ber.Packet) (ctrl Control, err error) {
 		// both are optional, check the type to see what we got
 		if crit, ok := pkt.Children[1].Value.(bool); ok {
 			criticality = crit
+			pkt.Children[1].Description = fmt.Sprintf("Criticality: %t", criticality)
 		} else {
+			pkt.Children[1].Description = "Control Value"
 			value = pkt.Children[1]
 		}
 	case 3:
 		criticality = pkt.Children[1].Value.(bool)
-		value = pkt.Children[1]
+		pkt.Children[1].Description = fmt.Sprintf("Criticality: %t", criticality)
+		value = pkt.Children[2]
+		pkt.Children[2].Description = "Control Value"
 	}
 
 	decode := GetDecoder(oid)
@@ -188,5 +200,9 @@ func Decode(pkt *ber.Packet) (ctrl Control, err error) {
 
 	// explicitly set ctrl, err so we can catch panics in bad decoders
 	ctrl, err = decode(oid, criticality, value)
-	return ctrl, err
+	if err != nil {
+		return nil, err
+	}
+	pkt.Children[0].Description = "Control OID: " + ctrl.Name()
+	return ctrl, nil
 }

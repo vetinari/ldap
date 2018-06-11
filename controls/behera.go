@@ -130,24 +130,29 @@ func decodeBehera(_ string, criticality bool, pkt *ber.Packet) (Control, error) 
 		switch child.Tag {
 		case 0:
 			val, err := ber.ParseInt64(child.Children[0].Data.Bytes())
+			child.Description = "Warning Packet"
 			if err != nil {
 				return nil, fmt.Errorf("ParseInt64: %s", err)
 			}
 			switch child.Children[0].Tag {
 			case 0:
+				child.Children[0].Description = "Expire Time"
 				ctrl.Expire = val
 			case 1:
+				child.Children[0].Description = "Grace Time"
 				ctrl.Grace = val
 			default:
 				return nil, fmt.Errorf("invalid tag %d on warning packet child", child.Children[0].Tag)
 			}
 		case 1:
+			child.Description = "Error Packet"
 			val, err := ber.ParseInt64(child.Data.Bytes())
 			if err != nil {
 				return nil, fmt.Errorf("ParseInt64: %s", err)
 			}
 			ctrl.Error = int8(val)
 			ctrl.ErrorString = BeheraPasswordPolicyErrorMap[ctrl.Error]
+			child.Description += ": " + ctrl.ErrorString
 
 		default:
 			return nil, fmt.Errorf("invalid tag on child: %d", child.Tag)

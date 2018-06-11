@@ -23,6 +23,8 @@ func decodePaging(_ string, c bool, val *ber.Packet) (Control, error) {
 	if !ok {
 		return nil, ErrInvalidControlValue
 	}
+	val.Children[0].Description = "Paging Size"
+	val.Children[1].Description = "Cookie"
 
 	return &Paging{
 		Critical: c,

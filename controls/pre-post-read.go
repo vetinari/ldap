@@ -10,6 +10,11 @@ import (
 const ControlOIDPreRead string = "1.3.6.1.1.13.1"
 const ControlOIDPostRead string = "1.3.6.1.1.13.2"
 
+type AttributeSelection struct {
+	Type   string
+	Values []string
+}
+
 type PrePostRead struct {
 	IsRequest  bool
 	ControlOID string
@@ -18,7 +23,7 @@ type PrePostRead struct {
 	Attrs []string
 
 	DN       string
-	AttrVals map[string][]string
+	AttrVals []AttributeSelection
 }
 
 func NewPreReadRequest(c bool, attrs []string) *PrePostRead {
@@ -30,13 +35,13 @@ func NewPreReadRequest(c bool, attrs []string) *PrePostRead {
 	}
 }
 
-func NewPreReadResult(c bool, dn string, attrVals map[string][]string) *PrePostRead {
+func NewPreReadResult(c bool, dn string, attrs []AttributeSelection) *PrePostRead {
 	return &PrePostRead{
 		Critical:   c,
 		IsRequest:  false,
 		ControlOID: ControlOIDPreRead,
 		DN:         dn,
-		AttrVals:   attrVals,
+		AttrVals:   attrs,
 	}
 }
 
@@ -49,13 +54,13 @@ func NewPostReadRequest(c bool, attrs []string) *PrePostRead {
 	}
 }
 
-func NewPostReadResult(c bool, dn string, attrVals map[string][]string) *PrePostRead {
+func NewPostReadResult(c bool, dn string, attrs []AttributeSelection) *PrePostRead {
 	return &PrePostRead{
 		Critical:   c,
 		IsRequest:  false,
 		ControlOID: ControlOIDPostRead,
 		DN:         dn,
-		AttrVals:   attrVals,
+		AttrVals:   attrs,
 	}
 }
 
@@ -74,6 +79,7 @@ func decodePrePostRead(oid string, c bool, pkt *ber.Packet) (Control, error) {
 	case ber.TagSequence: // we got a request
 		read.IsRequest = true
 		for _, child := range pkt.Children {
+			child.Description = "Request Attribute"
 			read.Attrs = append(read.Attrs, child.Value.(string))
 		}
 		return read, nil
@@ -84,12 +90,17 @@ func decodePrePostRead(oid string, c bool, pkt *ber.Packet) (Control, error) {
 			return nil, fmt.Errorf("failed to decode control value: %s", err)
 		}
 		read.DN = entry.Children[0].Value.(string)
-		read.AttrVals = make(map[string][]string)
+		entry.Children[0].Description = "DN"
+
 		for _, child := range entry.Children[1].Children {
 			attr := child.Children[0].Value.(string)
+			child.Children[0].Description = "Attribute Name"
+			as := AttributeSelection{Type: attr}
 			for _, value := range child.Children[1].Children {
-				read.AttrVals[attr] = append(read.AttrVals[attr], value.Value.(string))
+				as.Values = append(as.Values, value.Value.(string))
+				value.Description = "Attribute Value"
 			}
+			read.AttrVals = append(read.AttrVals, as)
 		}
 		return read, nil
 
@@ -135,17 +146,17 @@ func (c *PrePostRead) Encode() *ber.Packet {
 	attrVals := ber.Encode(
 		ber.ClassUniversal, ber.TypeConstructed, ber.TagSequence, nil, "Result Attributes",
 	)
-	for attr, vals := range c.AttrVals {
+	for _, attrs := range c.AttrVals {
 		av := ber.Encode(
 			ber.ClassUniversal, ber.TypeConstructed, ber.TagSequence, nil, "Result Attribute",
 		)
 		av.AppendChild(
-			ber.NewString(ber.ClassUniversal, ber.TypePrimitive, ber.TagOctetString, attr, "Result Attr Name"),
+			ber.NewString(ber.ClassUniversal, ber.TypePrimitive, ber.TagOctetString, attrs.Type, "Result Attr Name"),
 		)
 		avs := ber.Encode(
 			ber.ClassUniversal, ber.TypeConstructed, ber.TagSequence, nil, "Result Attribute Values",
 		)
-		for _, val := range vals {
+		for _, val := range attrs.Values {
 			avs.AppendChild(
 				ber.NewString(ber.ClassUniversal, ber.TypePrimitive, ber.TagOctetString, val, "Result Attribute"),
 			)

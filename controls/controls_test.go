@@ -41,13 +41,13 @@ func TestControlPrePostRead(t *testing.T) {
 	runControlTest(t, NewPreReadRequest(false, []string{"cn", "uid"}))
 	runControlTest(t, NewPostReadRequest(false, []string{"cn", "uid"}))
 
-	runControlTest(t, NewPreReadResult(false, "uid=someone,dc=example,dc=org", map[string][]string{
-		"cn":  {"Some User"},
-		"uid": {"someone"},
+	runControlTest(t, NewPreReadResult(false, "uid=someone,dc=example,dc=org", []AttributeSelection{
+		{Type: "cn", Values: []string{"Some User"}},
+		{Type: "uid", Values: []string{"someone"}},
 	}))
-	runControlTest(t, NewPostReadResult(false, "uid=someone,dc=example,dc=org", map[string][]string{
-		"cn":  {"Some User"},
-		"uid": {"someone"},
+	runControlTest(t, NewPostReadResult(false, "uid=someone,dc=example,dc=org", []AttributeSelection{
+		{Type: "cn", Values: []string{"Some User"}},
+		{Type: "uid", Values: []string{"someone"}},
 	}))
 
 }
@@ -69,8 +69,9 @@ func runControlTest(t *testing.T, originalControl Control) {
 	if err != nil {
 		t.Errorf("%sdecoding encoded bytes control failed: %s", header, err)
 	}
-	if !bytes.Equal(encodedBytes, fromPacket.Encode().Bytes()) {
-		t.Errorf("%sround-trip from encoded packet failed", header)
+	fpeb := fromPacket.Encode().Bytes()
+	if !bytes.Equal(encodedBytes, fpeb) {
+		t.Errorf("%sround-trip from encoded packet failed : %v <=> %v", header, encodedBytes, fpeb)
 	}
 	if reflect.TypeOf(originalControl) != reflect.TypeOf(fromPacket) {
 		t.Errorf("%sgot different type decoding from encoded packet: %T vs %T", header, fromPacket, originalControl)

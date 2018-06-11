@@ -70,6 +70,7 @@ func decodeVChuPassword(oid string, criticality bool, pkt *ber.Packet) (Control,
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse value as int: %s", err)
 		}
+		pkt.Children[0].Description = fmt.Sprintf("Password expires in %d seconds", expire)
 		return VChuPasswordWarning(expire), nil
 	default:
 		return nil, errors.New("invalid control passwd to decoder")
