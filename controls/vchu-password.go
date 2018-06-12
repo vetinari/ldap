@@ -8,24 +8,34 @@ import (
 	ber "gopkg.in/asn1-ber.v1"
 )
 
+// VChuPasswordMustChange implements the Password Must be changed control
 type VChuPasswordMustChange bool
+
+// VChuPasswordWarning implements the Password warning control
 type VChuPasswordWarning int64
 
+// ControlOIDVChuPasswordMustChange is the OID defined for the password must change control
 const ControlOIDVChuPasswordMustChange string = "2.16.840.1.113730.3.4.4"
+
+// ControlOIDVChuPasswordWarning is the OID defined for the password expiry warning control
 const ControlOIDVChuPasswordWarning string = "2.16.840.1.113730.3.4.5"
 
+// OID is part of the Control interface
 func (c VChuPasswordMustChange) OID() string {
 	return ControlOIDVChuPasswordMustChange
 }
 
+// Name is part of the Control interface
 func (c VChuPasswordMustChange) Name() string {
 	return "VChu Password Policy - Password Must Change"
 }
 
+// Criticality is part of the Control interface
 func (c VChuPasswordMustChange) Criticality() bool {
 	return false
 }
 
+// Encode is part of the Control interface
 func (c VChuPasswordMustChange) Encode() *ber.Packet {
 	val := ber.Encode(
 		ber.ClassUniversal, ber.TypeConstructed, ber.TagSequence, nil, "Control Value",
@@ -37,18 +47,22 @@ func (c VChuPasswordMustChange) Encode() *ber.Packet {
 	return Encode(c, val)
 }
 
+// OID is part of the Control interface
 func (c VChuPasswordWarning) OID() string {
 	return ControlOIDVChuPasswordWarning
 }
 
+// Name is part of the Control interface
 func (c VChuPasswordWarning) Name() string {
 	return "VChu Password Policy - Password Expires"
 }
 
+// Criticality is part of the Control interface
 func (c VChuPasswordWarning) Criticality() bool {
 	return false
 }
 
+// Encode is part of the Control interface
 func (c VChuPasswordWarning) Encode() *ber.Packet {
 	val := ber.Encode(
 		ber.ClassUniversal, ber.TypeConstructed, ber.TagSequence, nil, "Control Value",

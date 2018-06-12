@@ -1,8 +1,6 @@
 package controls
 
 import (
-	"fmt"
-
 	"gopkg.in/asn1-ber.v1"
 )
 
@@ -34,11 +32,4 @@ func (c ManageDsaIT) Encode() *ber.Packet {
 // Criticality is part of the Control interface
 func (c ManageDsaIT) Criticality() bool {
 	return bool(c)
-}
-
-func (c ManageDsaIT) Describe(_ string, val *ber.Packet) error {
-	if val != nil {
-		return fmt.Errorf("no value expected")
-	}
-	return nil
 }

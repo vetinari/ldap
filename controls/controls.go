@@ -11,14 +11,18 @@ import (
 
 // Control is the interface which every control must implement
 type Control interface {
+	// OID returns the OID defined for the control
 	OID() string
+	// Criticality returns the criticality of the control
 	Criticality() bool
+	// Name returns a short human readable description of the control
 	Name() string
+	// Encode encodes the control, suitable to be added to the LDAP message packet
 	Encode() *ber.Packet // note: may return nil
 }
 
-// Decoder must be implemented by control parsers, most implementations will ignore
-// the oid argument.
+// Decoder must be implemented by control parsers, most simple implementations
+// will ignore the oid argument.
 type Decoder func(oid string, criticality bool, value *ber.Packet) (Control, error)
 
 type controlRegister struct {
@@ -123,8 +127,11 @@ func (u *UnknownControl) Encode() *ber.Packet {
 	return nil
 }
 
-// Encode encodes the Control to a BER packet suitable to be added to a response.
-// The val argument is the already BER encoded control value
+// Encode encodes the Control to a BER packet suitable to be added to an LDAP message.
+//
+// The val argument is the already BER encoded control value. Encode() should be called
+// by Control implementations to wrap their value into a control packet as last
+// step.
 func Encode(c Control, val *ber.Packet) *ber.Packet {
 	packet := ber.Encode(
 		ber.ClassUniversal, ber.TypeConstructed, ber.TagSequence, nil, "Control",

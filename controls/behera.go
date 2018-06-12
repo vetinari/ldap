@@ -6,6 +6,7 @@ import (
 	ber "gopkg.in/asn1-ber.v1"
 )
 
+// ControlOIDBeheraPasswordPolicy is the OID defined for the Password Policy Control
 const ControlOIDBeheraPasswordPolicy = "1.3.6.1.4.1.42.2.27.8.5.1"
 
 // Ldap Behera Password Policy Draft 10 (https://tools.ietf.org/html/draft-behera-ldap-password-policy-10)
@@ -48,15 +49,17 @@ type BeheraPasswordPolicy struct {
 	Critical bool
 }
 
+// OID is part of the Control interface
 func (c *BeheraPasswordPolicy) OID() string {
 	return ControlOIDBeheraPasswordPolicy
 }
 
+// Name is part of the Control interface
 func (c *BeheraPasswordPolicy) Name() string {
 	return "Password Policy - Behera Draft"
 }
 
-// Encode() encodes the BeheraPasswordPolicy control.
+// Encode encodes the BeheraPasswordPolicy control.
 //
 //       PasswordPolicyResponseValue ::= SEQUENCE {
 //         warning [0] CHOICE {
@@ -106,10 +109,13 @@ func (c *BeheraPasswordPolicy) Encode() *ber.Packet {
 	return Encode(c, val)
 }
 
+// Criticality is part of the Control interface
 func (c *BeheraPasswordPolicy) Criticality() bool {
 	return c.Critical
 }
 
+// NewBeheraPasswordPolicy returns a new BeheraPasswordPolicy control initialized
+// with the required values
 func NewBeheraPasswordPolicy() *BeheraPasswordPolicy {
 	return &BeheraPasswordPolicy{
 		Expire: -1,

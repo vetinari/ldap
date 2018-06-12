@@ -7,14 +7,19 @@ import (
 	ber "gopkg.in/asn1-ber.v1"
 )
 
+// ControlOIDPreRead is the OID defined in RFC 4527 for the pre read control
 const ControlOIDPreRead string = "1.3.6.1.1.13.1"
+
+// ControlOIDPostRead is the OID defined in RFC 4527 for the post read control
 const ControlOIDPostRead string = "1.3.6.1.1.13.2"
 
+// AttributeSelection holds the attribute / values in the response
 type AttributeSelection struct {
 	Type   string
 	Values []string
 }
 
+// PrePostRead is the implementation of the Pre and Post Read controls
 type PrePostRead struct {
 	IsRequest  bool
 	ControlOID string
@@ -26,6 +31,7 @@ type PrePostRead struct {
 	AttrVals []AttributeSelection
 }
 
+// NewPreReadRequest returns a new pre read request control
 func NewPreReadRequest(c bool, attrs []string) *PrePostRead {
 	return &PrePostRead{
 		Critical:   c,
@@ -35,6 +41,7 @@ func NewPreReadRequest(c bool, attrs []string) *PrePostRead {
 	}
 }
 
+// NewPreReadResult returns a new pre read response control
 func NewPreReadResult(c bool, dn string, attrs []AttributeSelection) *PrePostRead {
 	return &PrePostRead{
 		Critical:   c,
@@ -45,6 +52,7 @@ func NewPreReadResult(c bool, dn string, attrs []AttributeSelection) *PrePostRea
 	}
 }
 
+// NewPostReadRequest returns a new post read request control
 func NewPostReadRequest(c bool, attrs []string) *PrePostRead {
 	return &PrePostRead{
 		Critical:   c,
@@ -54,6 +62,7 @@ func NewPostReadRequest(c bool, attrs []string) *PrePostRead {
 	}
 }
 
+// NewPostReadResult returns a new post read response control
 func NewPostReadResult(c bool, dn string, attrs []AttributeSelection) *PrePostRead {
 	return &PrePostRead{
 		Critical:   c,
@@ -109,14 +118,17 @@ func decodePrePostRead(oid string, c bool, pkt *ber.Packet) (Control, error) {
 	}
 }
 
+// Criticality is part of the Control interface
 func (c *PrePostRead) Criticality() bool {
 	return c.Critical
 }
 
+// OID is part of the Control interface
 func (c *PrePostRead) OID() string {
 	return c.ControlOID
 }
 
+// Name is part of the Control interface
 func (c *PrePostRead) Name() string {
 	if c.ControlOID == ControlOIDPreRead {
 		return "Pre Read - RFC 4527"
@@ -124,6 +136,7 @@ func (c *PrePostRead) Name() string {
 	return "Post Read - RFC 4527"
 }
 
+// Encode is part of the Control interface
 func (c *PrePostRead) Encode() *ber.Packet {
 	if c.IsRequest {
 		val := ber.Encode(
@@ -151,14 +164,14 @@ func (c *PrePostRead) Encode() *ber.Packet {
 			ber.ClassUniversal, ber.TypeConstructed, ber.TagSequence, nil, "Result Attribute",
 		)
 		av.AppendChild(
-			ber.NewString(ber.ClassUniversal, ber.TypePrimitive, ber.TagOctetString, attrs.Type, "Result Attr Name"),
+			ber.NewString(ber.ClassUniversal, ber.TypePrimitive, ber.TagOctetString, attrs.Type, "Result Attribute Name"),
 		)
 		avs := ber.Encode(
 			ber.ClassUniversal, ber.TypeConstructed, ber.TagSequence, nil, "Result Attribute Values",
 		)
 		for _, val := range attrs.Values {
 			avs.AppendChild(
-				ber.NewString(ber.ClassUniversal, ber.TypePrimitive, ber.TagOctetString, val, "Result Attribute"),
+				ber.NewString(ber.ClassUniversal, ber.TypePrimitive, ber.TagOctetString, val, "Result Attribute Value"),
 			)
 		}
 		av.AppendChild(avs)
